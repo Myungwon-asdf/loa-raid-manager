@@ -1,0 +1,29 @@
+name: Lostark API Auto Sync
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 매시간 정각에 실행
+  workflow_dispatch: # 깃허브 웹에서 수동으로 즉시 실행 가능
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Run API Sync Script
+        env:
+          LOSTARK_API_KEY: ${{ secrets.LOSTARK_API_KEY }}
+        run: node sync.js
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "🔄 로스트아크 API 자동/수동 갱신 완료"
+          branch: main
