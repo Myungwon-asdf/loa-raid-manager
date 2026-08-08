@@ -42,7 +42,7 @@
     .search-input:focus { border-color: #2563eb; outline: none; }
     .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.8rem; }
     .character-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-    .card-top-section { display: flex; align-items: stretch; cursor: grab; }
+    .card-top-section { display: flex; align-items: stretch; }
     .char-profile-box { width: 116px; min-width: 116px; background-color: var(--card-bg); border-right: 1px solid var(--border-color); padding: 8px; display: flex; align-items: center; justify-content: center; }
     .char-profile-img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
     .card-info-wrapper { padding: 14px 16px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
@@ -59,16 +59,19 @@
     .raid-tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
     .raid-tag-btn { font-size: 0.72rem; font-weight: 700; padding: 5px 9px; border-radius: 6px; border: 1px solid #1e293b; background-color: #090d16; color: #64748b; cursor: pointer; }
     .raid-tag-btn.active { background-color: #059669; border-color: #10b981; color: #ffffff; }
-    .card-footer-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; padding-top: 6px; }
-    .btn-card-icon { background: none; border: none; color: #64748b; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-    .btn-card-icon:hover { color: #cbd5e1; }
-    .schedule-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
-    .schedule-title { font-size: 1.1rem; font-weight: 800; color: #fbbf24; }
-    .schedule-badge { font-size: 0.75rem; background-color: #1e293b; color: #94a3b8; padding: 2px 8px; border-radius: 6px; }
-    .char-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; margin-right: 6px; margin-bottom: 6px; border: 1px solid #1a2336; }
-    .char-chip.done { background-color: #064e3b; color: #34d399; border-color: #059669; }
-    .char-chip.todo { background-color: #0f172a; color: #cbd5e1; border-color: #334155; }
-    .char-chip-img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+
+    /* 모달 배경 블러 및 세련된 다이얼로그 스타일 */
+    .modal-backdrop.show {
+      backdrop-filter: blur(5px);
+      background-color: rgba(0, 0, 0, 0.7);
+      opacity: 1 !important;
+    }
+    .modal-content {
+      background-color: #0f1523 !important;
+      border: 1px solid #1a2336 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -88,7 +91,6 @@
     <div class="d-flex gap-2">
       <button class="btn-header-action btn-api-refresh" onclick="refreshApiData()" id="refreshBtn">🔄 API 최신화</button>
       <button class="btn-header-action btn-weekly-reset" onclick="resetWeeklyRaids()">🧹 주간 초기화</button>
-      <button class="btn-header-action btn-icon-only" onclick="openRaidManageModal()" title="레이드 관리">⚙️</button>
     </div>
   </div>
 
@@ -112,16 +114,44 @@
   <div class="row g-3" id="characterGrid"><div class="col-12 text-center py-5 text-muted">데이터 로딩 중...</div></div>
   <div id="scheduleView" style="display: none;"><div id="scheduleListContainer"></div></div>
 
-  <!-- 모달 및 스크립트 영역 생략 없이 통합 -->
+  <!-- 캐릭터 추가 모달 (배경 블러 적용) -->
+  <div class="modal fade" id="addCharModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-white">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title">수기 캐릭터 추가</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small text-muted">캐릭터명 (로스트아크 정확한 캐릭터명)</label>
+            <input type="text" class="form-control bg-secondary text-white border-0" id="newCharName" placeholder="캐릭터명 입력">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-muted">소유자 (원정대 그룹명)</label>
+            <input type="text" class="form-control bg-secondary text-white border-0" id="newCharOwner" placeholder="원정대 이름">
+          </div>
+          <div class="text-warning small">ℹ️ 캐릭터 추가 후, 깃허브 [Actions] 탭에서 [Run workflow]를 실행하면 API 정보가 채워집니다[cite: 1].</div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-warning btn-sm" onclick="addNewCharacter()">추가하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     let masterRaids = [];
     let characterList = [];
     let currentOwnerFilter = 'ALL';
     let currentMainView = 'CHARS';
-    
-    // GitHub 데이터 로드 (같은 레포지토리 안의 data.json fetch)
+    let addModal;
+
     window.onload = function() {
+      addModal = new bootstrap.Modal(document.getElementById('addCharModal'));
       loadDataFromGitHub();
     };
 
@@ -140,12 +170,6 @@
         });
     }
 
-    // 변경 사항을 GitHub에 반영하는 함수 (개인 토큰 또는 백엔드 연동 필요시 확장)
-    function saveDataToGitHub() {
-      // 로컬 스토리지 임시 동기화 후 안내 (GitHub Pages는 정적이므로 실시간 푸시를 위해 개인 토큰이 필요합니다)
-      console.log("데이터 변경됨:", { masterRaids, characterList });
-    }
-
     function switchView(viewName) {
       currentMainView = viewName;
       document.getElementById('btnTabChars').classList.toggle('active', viewName === 'CHARS');
@@ -153,7 +177,36 @@
       document.getElementById('characterGrid').style.display = viewName === 'CHARS' ? 'flex' : 'none';
       document.getElementById('scheduleView').style.display = viewName === 'SCHEDULE' ? 'block' : 'none';
       document.getElementById('filterBarView').style.display = viewName === 'CHARS' ? 'flex' : 'none';
-      if (viewName === 'SCHEDULE') renderScheduleView();
+    }
+
+    function openAddCharacterModal() {
+      if (addModal) addModal.show();
+    }
+
+    function addNewCharacter() {
+      const name = document.getElementById('newCharName').value.trim();
+      const owner = document.getElementById('newCharOwner').value.trim() || '기본';
+      if (!name) {
+        alert('캐릭터명을 입력해주세요.');
+        return;
+      }
+
+      characterList.push({
+        name: name,
+        owner: owner,
+        itemLevel: 0,
+        className: '정보 갱신 대기중',
+        title: '신규 캐릭터',
+        gemSummary: '정보 없음',
+        characterImage: '',
+        completedRaids: []
+      });
+
+      renderOwnerTabs();
+      renderDashboard();
+      if (addModal) addModal.hide();
+
+      alert(`'${name}' 캐릭터가 추가되었습니다!\n\n⚠️ 주의: GitHub Pages 환경 특성상 웹 화면에서 곧바로 파일이 저장되지는 않습니다.\n1. GitHub 웹사이트의 data.json 파일에 이 캐릭터를 직접 추가하시거나,\n2. 깃허브 Actions의 [Run workflow]를 실행해 주세요.`);
     }
 
     function renderOwnerTabs() {
@@ -173,8 +226,7 @@
     function filterByOwner(owner) {
       currentOwnerFilter = owner;
       renderOwnerTabs();
-      if (currentMainView === 'CHARS') renderDashboard();
-      else renderScheduleView();
+      renderDashboard();
     }
 
     function getAvailableRaidsForCharacter(charLevel) {
@@ -217,14 +269,14 @@
         return;
       }
 
-      filteredChars.forEach(c => {
+      filteredChars.forEach((c, index) => {
         const charLevel = Number(c.itemLevel) || 0;
         const availableRaids = getAvailableRaidsForCharacter(charLevel);
         const completedCount = (c.completedRaids || []).filter(raidId => availableRaids.some(ar => ar.id === raidId)).length;
 
         let raidsHtml = availableRaids.length === 0 ? `<span class="text-muted small">입장 가능 레이드 없음</span>` : availableRaids.map(r => {
           const isChecked = (c.completedRaids || []).includes(r.id);
-          return `<button class="raid-tag-btn ${isChecked ? 'active' : ''}" onclick="toggleRaid('${c.id}', '${r.id}')">${isChecked ? '✓ ' : ''}${r.name}</button>`;
+          return `<button class="raid-tag-btn ${isChecked ? 'active' : ''}" onclick="toggleRaid('${index}', '${r.id}')">${isChecked ? '✓ ' : ''}${r.name}</button>`;
         }).join('');
 
         const col = document.createElement('div');
@@ -254,8 +306,8 @@
       });
     }
 
-    function toggleRaid(charId, raidId) {
-      const targetChar = characterList.find(c => c.id === charId);
+    function toggleRaid(charIndex, raidId) {
+      const targetChar = characterList[charIndex];
       if (!targetChar) return;
       if (!targetChar.completedRaids) targetChar.completedRaids = [];
 
@@ -264,15 +316,16 @@
       else targetChar.completedRaids.push(raidId);
 
       renderDashboard();
-      saveDataToGitHub();
     }
 
-    function refreshApiData() { alert('GitHub 에디션에서는 외부 Lostark API 직접 호출 시 CORS 이슈가 발생할 수 있어 백엔드 연동이 필요합니다.'); }
+    function refreshApiData() { 
+      alert('GitHub Actions에서 API 최신화(Run workflow)를 실행하면 data.json이 업데이트됩니다!'); 
+    }
+
     function resetWeeklyRaids() {
       if (confirm('주간 레이드 기록을 초기화하시겠습니까?')) {
         characterList.forEach(c => c.completedRaids = []);
         renderDashboard();
-        saveDataToGitHub();
       }
     }
   </script>
