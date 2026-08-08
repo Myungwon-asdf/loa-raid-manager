@@ -171,7 +171,7 @@
     let characterList = [];
     let currentOwnerFilter = 'ALL';
     let currentMainView = 'CHARS';
-    let tempFetchedData = null; // API로 조회된 임시 데이터 저장용
+    let tempFetchedData = null;
 
     window.onload = function() {
       loadDataFromGitHub();
@@ -213,7 +213,6 @@
       document.getElementById('addCharModal').classList.remove('show');
     }
 
-    // 로스트아크 API 연동 시뮬레이션 (추후 실제 로스트아크 Open API 연동 코드로 확장 가능)
     function fetchCharacterApiData() {
       const name = document.getElementById('newCharName').value.trim();
       if (!name) {
@@ -221,10 +220,6 @@
         return;
       }
 
-      // TODO: 실제 로스트아크 API 연동 시 fetch를 통해 데이터를 받아오면 됩니다.
-      // 현재는 UI 흐름 테스트를 위해 가상의 데이터를 가져오는 로직으로 구성되어 있습니다.
-      
-      // 임시 데이터 생성 (API 연동 시 이 부분을 실제 API 응답 구조로 변경)
       tempFetchedData = {
         name: name,
         owner: document.getElementById('newCharOwner').value,
@@ -236,10 +231,9 @@
         completedRaids: []
       };
 
-      // 미리보기 반영
       document.getElementById('previewText').innerText = `직업: ${tempFetchedData.className} | 아이템 레벨: Lv.${tempFetchedData.itemLevel}`;
       document.getElementById('apiPreviewBox').style.display = 'block';
-      document.getElementById('btnAddFinal').disabled = false; // 추가하기 버튼 활성화
+      document.getElementById('btnAddFinal').disabled = false;
     }
 
     function addNewCharacter() {
@@ -248,9 +242,7 @@
         return;
       }
 
-      // 선택한 소유자로 최종 갱신
       tempFetchedData.owner = document.getElementById('newCharOwner').value;
-
       characterList.push(tempFetchedData);
 
       renderOwnerTabs();
