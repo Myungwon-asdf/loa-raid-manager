@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>LOA RAID - 원정대 캐릭터 및 주간 레이드 관리 시스템</title>
-  <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     :root {
@@ -58,7 +57,6 @@
     .raid-tag-btn { font-size: 0.72rem; font-weight: 700; padding: 5px 9px; border-radius: 6px; border: 1px solid #1e293b; background-color: #090d16; color: #64748b; cursor: pointer; }
     .raid-tag-btn.active { background-color: #059669; border-color: #10b981; color: #ffffff; }
 
-    /* 커스텀 모달 및 블러 배경 스타일 */
     .custom-modal-backdrop {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -121,7 +119,7 @@
   <div class="row g-3" id="characterGrid"><div class="col-12 text-center py-5 text-muted">데이터 로딩 중...</div></div>
   <div id="scheduleView" style="display: none;"><div id="scheduleListContainer"></div></div>
 
-  <!-- 수기 캐릭터 추가 모달 (소유자 리스트 선택 & 실제 API 연동 플로우) -->
+  <!-- 캐릭터 추가 및 실제 API 조회 모달 -->
   <div class="custom-modal-backdrop" id="addCharModal">
     <div class="custom-modal-box text-white">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -129,7 +127,6 @@
         <button type="button" class="btn-close btn-close-white" onclick="closeAddCharacterModal()"></button>
       </div>
 
-      <!-- 1. 소유자 선택 리스트 -->
       <div class="mb-3">
         <label class="form-label small text-muted">1. 소유자 (원정대 선택)</label>
         <select class="form-select bg-secondary text-white border-0" id="newCharOwner">
@@ -142,7 +139,6 @@
         </select>
       </div>
 
-      <!-- 2. 캐릭터명 입력 -->
       <div class="mb-3">
         <label class="form-label small text-muted">2. 캐릭터명 (로스트아크 정확한 캐릭터명)</label>
         <div class="input-group">
@@ -151,13 +147,12 @@
         </div>
       </div>
 
-      <!-- API 조회 결과 미리보기 영역 -->
       <div class="p-3 mb-3 rounded bg-black bg-opacity-50 border border-secondary" id="apiPreviewBox" style="display: none;">
         <div class="small text-warning fw-bold mb-1" id="previewTitle">✨ API 조회 성공!</div>
-        <div class="small text-light" id="previewText">직업: - / 레벨: -</div>
+        <div class="small text-light" id="previewText">직업: - / 레벨: - / 보석: -</div>
       </div>
 
-      <div class="text-muted small mb-4">ℹ️ 소유자를 고르고 캐릭터명 입력 후 [API 조회]를 누르면 실제 오픈 API를 통해 정보를 가져옵니다.</div>
+      <div class="text-muted small mb-4">ℹ️ 소유자를 고르고 캐릭터명 입력 후 [API 조회]를 누르면 직업, 레벨, 보석 정보를 불러옵니다.</div>
       
       <div class="d-flex justify-content-end gap-2">
         <button type="button" class="btn btn-secondary btn-sm px-3" onclick="closeAddCharacterModal()">취소</button>
@@ -172,6 +167,9 @@
     let currentOwnerFilter = 'ALL';
     let currentMainView = 'CHARS';
     let tempFetchedData = null;
+
+    // 배포한 구글 앱 스크립트 웹앱 URL 입력
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9_OASn-ztt4F6_02Chgzh18AiEKGAc4mINLAAPHtlF5cvE5ne1WTeBfvEJ9txb5bg/exec";
 
     window.onload = function() {
       loadDataFromGitHub();
@@ -213,7 +211,6 @@
       document.getElementById('addCharModal').classList.remove('show');
     }
 
-    // 실제 로스트아크 Open API를 호출하는 연동 함수 (Code.gs의 syncSingleCharacter 로직 반영)
     async function fetchCharacterApiData() {
       const name = document.getElementById('newCharName').value.trim();
       if (!name) {
@@ -230,42 +227,33 @@
       previewText.innerText = "로스트아크 서버에서 정보를 불러오는 중입니다...";
 
       try {
-        // GitHub Pages 환경 등에서 Apps Script 웹앱 URL이나 프록시를 통해 호출하는 구조
-        // 만약 Google Apps Script 웹앱 배포 URL을 연동 중이시라면 해당 엔드포인트로 fetch 하거나 
-        // 제공해주신 Code.gs의 백엔드 로직(`syncSingleCharacter`)을 활용합니다.
-        // 아래는 시뮬레이션 및 실제 API 연동을 위한 구조입니다.
-        
-        // *참고*: 브라우저에서 직접 스토브 API를 호출하면 CORS 이슈가 발생할 수 있으므로, 
-        // 구글 앱 스크립트 웹앱(Web App)으로 배포된 주소가 있다면 거기를 통해 호출해야 합니다.
-        // 현재는 제공해주신 Code.gs 백엔드 규칙에 맞춰 데이터를 구성하도록 처리합니다.
-        
-        // 예시용 API 호출 (Apps Script 웹앱 연동 시 해당 URL로 교체 가능)
-        // const response = await fetch(`YOUR_APPS_SCRIPT_WEB_APP_URL?action=sync&name=${encodeURIComponent(name)}`);
-        
-        // 여기서는 직접 로스트아크 오픈 API 구조에 맞춘 파싱 로직을 수행합니다.
-        // (만약 Google Apps Script 환경 내부가 아니라정적 페이지라면 Apps Script Web App API URL을 연동해야 합니다)
-        
-        // 임시 테스트용이 아닌 실제 API 응답 시뮬레이션 데이터 매핑
-        tempFetchedData = {
-          id: String(Date.now()),
-          owner: document.getElementById('newCharOwner').value,
-          name: name,
-          className: "직업명(API연동됨)",
-          itemLevel: 1640.00,
-          combatPower: "-",
-          title: "칭호",
-          gemSummary: "보석 정보",
-          characterImage: "",
-          completedRaids: []
-        };
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=sync&name=${encodeURIComponent(name)}`);
+        const result = await response.json();
 
-        previewTitle.innerText = "✨ API 조회 성공!";
-        previewText.innerText = `직업: ${tempFetchedData.className} | 아이템 레벨: Lv.${tempFetchedData.itemLevel}`;
-        document.getElementById('btnAddFinal').disabled = false;
+        if (result.status === "OK") {
+          tempFetchedData = {
+            id: String(Date.now()),
+            owner: document.getElementById('newCharOwner').value,
+            name: result.name,
+            className: result.className,
+            itemLevel: result.itemLevel,
+            title: result.title,
+            gemSummary: result.gemSummary,
+            characterImage: result.characterImage,
+            completedRaids: []
+          };
 
+          previewTitle.innerText = "✨ API 조회 성공!";
+          previewText.innerText = `직업: ${tempFetchedData.className} | 레벨: Lv.${tempFetchedData.itemLevel} | 보석: ${tempFetchedData.gemSummary}`;
+          document.getElementById('btnAddFinal').disabled = false;
+        } else {
+          previewTitle.innerText = "❌ 조회 실패";
+          previewText.innerText = result.message || "캐릭터를 찾을 수 없습니다.";
+          document.getElementById('btnAddFinal').disabled = true;
+        }
       } catch (e) {
-        previewTitle.innerText = "❌ 조회 실패";
-        previewText.innerText = "캐릭터를 찾을 수 없거나 API 오류가 발생했습니다.";
+        previewTitle.innerText = "❌ 통신 오류";
+        previewText.innerText = "서버와 통신 중 오류가 발생했습니다. 앱 스크립트 URL을 확인해주세요.";
         document.getElementById('btnAddFinal').disabled = true;
       }
     }
