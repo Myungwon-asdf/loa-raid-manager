@@ -15,18 +15,6 @@
   ],
   "characterList": [
     {
-      "id": "1",
-      "owner": "아리",
-      "name": "예시캐릭터",
-      "className": "슬레이어",
-      "itemLevel": 1680,
-      "combatPower": "250000",
-      "title": "빛의 소리",
-      "gemSummary": "9레벨 6개",
-      "characterImage": "",
-      "completedRaids": []
-    },
-    {
       "id": "1786209763156",
       "owner": "청이",
       "name": "방산비리전문",
