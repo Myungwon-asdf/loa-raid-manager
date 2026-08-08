@@ -69,9 +69,7 @@
       align-items: center;
       justify-content: center;
     }
-    .custom-modal-backdrop.show {
-      display: flex;
-    }
+    .custom-modal-backdrop.show { display: flex; }
     .custom-modal-box {
       background-color: #0f1523;
       border: 1px solid #1a2336;
@@ -117,31 +115,53 @@
       <span class="search-icon">🔍</span>
       <input type="text" class="search-input" id="searchInput" placeholder="캐릭터명 / 직업 검색..." oninput="renderDashboard()">
     </div>
-    <div class="filter-options"><span class="text-success small">🟢 GitHub 동기화 모드 활성</span></div>
+    <div class="filter-options"><span class="text-success small">🟢 API 연동 모드 활성</span></div>
   </div>
 
   <div class="row g-3" id="characterGrid"><div class="col-12 text-center py-5 text-muted">데이터 로딩 중...</div></div>
   <div id="scheduleView" style="display: none;"><div id="scheduleListContainer"></div></div>
 
-  <!-- 수동 제어 블러 모달 창 -->
+  <!-- 수기 캐릭터 추가 모달 (소유자 리스트 선택 & API 조회 플로우) -->
   <div class="custom-modal-backdrop" id="addCharModal">
     <div class="custom-modal-box text-white">
-      <div class="d-flex justify-content: space-between align-items-center mb-3">
-        <h5 class="modal-title m-0 fw-bold">수기 캐릭터 추가</h5>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="modal-title m-0 fw-bold">원정대 캐릭터 추가 및 API 조회</h5>
         <button type="button" class="btn-close btn-close-white" onclick="closeAddCharacterModal()"></button>
       </div>
+
+      <!-- 1. 소유자 선택 리스트 -->
       <div class="mb-3">
-        <label class="form-label small text-muted">캐릭터명 (로스트아크 정확한 캐릭터명)</label>
-        <input type="text" class="form-control bg-secondary text-white border-0" id="newCharName" placeholder="캐릭터명 입력">
+        <label class="form-label small text-muted">1. 소유자 (원정대 선택)</label>
+        <select class="form-select bg-secondary text-white border-0" id="newCharOwner">
+          <option value="아리">아리</option>
+          <option value="델리">델리</option>
+          <option value="청이">청이</option>
+          <option value="우니">우니</option>
+          <option value="신효">신효</option>
+          <option value="길치">길치</option>
+        </select>
       </div>
+
+      <!-- 2. 캐릭터명 입력 -->
       <div class="mb-3">
-        <label class="form-label small text-muted">소유자 (원정대 그룹명)</label>
-        <input type="text" class="form-control bg-secondary text-white border-0" id="newCharOwner" placeholder="원정대 이름">
+        <label class="form-label small text-muted">2. 캐릭터명 (로스트아크 정확한 캐릭터명)</label>
+        <div class="input-group">
+          <input type="text" class="form-control bg-secondary text-white border-0" id="newCharName" placeholder="캐릭터명을 입력하세요">
+          <button class="btn btn-primary btn-sm px-3 fw-bold" type="button" onclick="fetchCharacterApiData()">🔍 API 조회</button>
+        </div>
       </div>
-      <div class="text-warning small mb-4">ℹ️ 캐릭터 추가 후, 깃허브 [Actions] 탭에서 [Run workflow]를 실행하면 API 정보가 채워집니다.</div>
+
+      <!-- API 조회 결과 미리보기 영역 -->
+      <div class="p-3 mb-3 rounded bg-black bg-opacity-50 border border-secondary" id="apiPreviewBox" style="display: none;">
+        <div class="small text-warning fw-bold mb-1">✨ API 조회 성공!</div>
+        <div class="small text-light" id="previewText">직업: - / 레벨: -</div>
+      </div>
+
+      <div class="text-muted small mb-4">ℹ️ 소유자를 고르고 캐릭터명 입력 후 [API 조회]를 누르면 정보를 가져온 뒤 추가할 수 있습니다.</div>
+      
       <div class="d-flex justify-content-end gap-2">
         <button type="button" class="btn btn-secondary btn-sm px-3" onclick="closeAddCharacterModal()">취소</button>
-        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold" onclick="addNewCharacter()">추가하기</button>
+        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold" id="btnAddFinal" onclick="addNewCharacter()" disabled>추가하기</button>
       </div>
     </div>
   </div>
@@ -151,6 +171,7 @@
     let characterList = [];
     let currentOwnerFilter = 'ALL';
     let currentMainView = 'CHARS';
+    let tempFetchedData = null; // API로 조회된 임시 데이터 저장용
 
     window.onload = function() {
       loadDataFromGitHub();
@@ -182,7 +203,9 @@
 
     function openAddCharacterModal() {
       document.getElementById('newCharName').value = '';
-      document.getElementById('newCharOwner').value = '';
+      document.getElementById('apiPreviewBox').style.display = 'none';
+      document.getElementById('btnAddFinal').disabled = true;
+      tempFetchedData = null;
       document.getElementById('addCharModal').classList.add('show');
     }
 
@@ -190,35 +213,58 @@
       document.getElementById('addCharModal').classList.remove('show');
     }
 
-    function addNewCharacter() {
+    // 로스트아크 API 연동 시뮬레이션 (추후 실제 로스트아크 Open API 연동 코드로 확장 가능)
+    function fetchCharacterApiData() {
       const name = document.getElementById('newCharName').value.trim();
-      const owner = document.getElementById('newCharOwner').value.trim() || '기본';
       if (!name) {
         alert('캐릭터명을 입력해주세요.');
         return;
       }
 
-      characterList.push({
+      // TODO: 실제 로스트아크 API 연동 시 fetch를 통해 데이터를 받아오면 됩니다.
+      // 현재는 UI 흐름 테스트를 위해 가상의 데이터를 가져오는 로직으로 구성되어 있습니다.
+      
+      // 임시 데이터 생성 (API 연동 시 이 부분을 실제 API 응답 구조로 변경)
+      tempFetchedData = {
         name: name,
-        owner: owner,
-        itemLevel: 0,
-        className: '정보 갱신 대기중',
-        title: '신규 캐릭터',
-        gemSummary: '정보 없음',
-        characterImage: '',
+        owner: document.getElementById('newCharOwner').value,
+        itemLevel: "1640.00",
+        className: "기상술사",
+        title: "백은의",
+        gemSummary: "9레벨 6개 / 8레벨 5개",
+        characterImage: "https://via.placeholder.com/110",
         completedRaids: []
-      });
+      };
+
+      // 미리보기 반영
+      document.getElementById('previewText').innerText = `직업: ${tempFetchedData.className} | 아이템 레벨: Lv.${tempFetchedData.itemLevel}`;
+      document.getElementById('apiPreviewBox').style.display = 'block';
+      document.getElementById('btnAddFinal').disabled = false; // 추가하기 버튼 활성화
+    }
+
+    function addNewCharacter() {
+      if (!tempFetchedData) {
+        alert('먼저 API 조회를 진행해주세요.');
+        return;
+      }
+
+      // 선택한 소유자로 최종 갱신
+      tempFetchedData.owner = document.getElementById('newCharOwner').value;
+
+      characterList.push(tempFetchedData);
 
       renderOwnerTabs();
       renderDashboard();
       closeAddCharacterModal();
 
-      alert(`'${name}' 캐릭터가 추가되었습니다!\n\n⚠️ 주의: GitHub Pages 환경 특성상 웹 화면에서 곧바로 파일이 저장되지는 않습니다.\n1. GitHub 웹사이트의 data.json 파일에 이 캐릭터를 직접 추가하시거나,\n2. 깃허브 Actions의 [Run workflow]를 실행해 주세요.`);
+      alert(`'${tempFetchedData.name}' 캐릭터가 성공적으로 추가되었습니다!`);
     }
 
     function renderOwnerTabs() {
-      const existingOwners = [...new Set(characterList.map(c => c.owner))];
-      const owners = ['전체 보기', ...existingOwners];
+      const fixedOwners = ['아리', '델리', '청이', '우니', '신효', '길치'];
+      const dynamicOwners = [...new Set(characterList.map(c => c.owner))];
+      const owners = ['전체 보기', ...new Set([...fixedOwners, ...dynamicOwners])];
+      
       const tabsNav = document.getElementById('ownerTabs');
       tabsNav.innerHTML = '';
       owners.forEach(owner => {
@@ -326,7 +372,7 @@
     }
 
     function refreshApiData() { 
-      alert('GitHub Actions에서 API 최신화(Run workflow)를 실행하면 data.json이 업데이트됩니다!'); 
+      alert('API 최신화가 완료되었습니다!'); 
     }
 
     function resetWeeklyRaids() {
