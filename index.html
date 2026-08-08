@@ -18,7 +18,6 @@
     }
     body { background-color: var(--bg-dark); color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px 24px; }
     .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; }
-    .brand-logo { width: 42px; height: 42px; object-fit: contain; border-radius: 8px; }
     .brand-title { font-size: 1.4rem; font-weight: 900; color: #ffffff; line-height: 1; }
     .brand-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
     .header-stats { display: flex; align-items: center; background-color: #0d121f; border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 20px; gap: 24px; }
@@ -28,7 +27,6 @@
     .btn-header-action { font-size: 0.82rem; font-weight: 700; padding: 7px 14px; border-radius: 8px; display: flex; align-items: center; gap: 6px; border: none; cursor: pointer; }
     .btn-api-refresh { background-color: #2563eb; color: #fff; }
     .btn-weekly-reset { background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
-    .btn-icon-only { background-color: #1e293b; color: #cbd5e1; padding: 7px 11px; border: 1px solid #334155; }
     .nav-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .owner-tabs .nav-link { color: #94a3b8; font-weight: 700; font-size: 0.85rem; padding: 6px 16px; border-radius: 8px; background: transparent; margin-right: 4px; border: 1px solid transparent; cursor: pointer; }
     .owner-tabs .nav-link.active { background-color: #f59e0b; color: #000000; font-weight: 800; }
@@ -60,17 +58,28 @@
     .raid-tag-btn { font-size: 0.72rem; font-weight: 700; padding: 5px 9px; border-radius: 6px; border: 1px solid #1e293b; background-color: #090d16; color: #64748b; cursor: pointer; }
     .raid-tag-btn.active { background-color: #059669; border-color: #10b981; color: #ffffff; }
 
-    /* 모달 배경 블러 및 세련된 다이얼로그 스타일 */
-    .modal-backdrop.show {
-      backdrop-filter: blur(5px);
-      background-color: rgba(0, 0, 0, 0.7);
-      opacity: 1 !important;
+    /* 커스텀 모달 및 블러 배경 스타일 */
+    .custom-modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      z-index: 1050;
+      display: none;
+      align-items: center;
+      justify-content: center;
     }
-    .modal-content {
-      background-color: #0f1523 !important;
-      border: 1px solid #1a2336 !important;
-      border-radius: 16px !important;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    .custom-modal-backdrop.show {
+      display: flex;
+    }
+    .custom-modal-box {
+      background-color: #0f1523;
+      border: 1px solid #1a2336;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 450px;
+      padding: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
   </style>
 </head>
@@ -89,7 +98,7 @@
       <div class="stat-item"><span class="stat-label">평균 아이템 레벨</span><span class="stat-value" style="color: var(--accent-yellow);" id="statAvgLevel">Lv.0.00</span></div>
     </div>
     <div class="d-flex gap-2">
-      <button class="btn-header-action btn-api-refresh" onclick="refreshApiData()" id="refreshBtn">🔄 API 최신화</button>
+      <button class="btn-header-action btn-api-refresh" onclick="refreshApiData()">🔄 API 최신화</button>
       <button class="btn-header-action btn-weekly-reset" onclick="resetWeeklyRaids()">🧹 주간 초기화</button>
     </div>
   </div>
@@ -114,44 +123,36 @@
   <div class="row g-3" id="characterGrid"><div class="col-12 text-center py-5 text-muted">데이터 로딩 중...</div></div>
   <div id="scheduleView" style="display: none;"><div id="scheduleListContainer"></div></div>
 
-  <!-- 캐릭터 추가 모달 (배경 블러 적용) -->
-  <div class="modal fade" id="addCharModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content text-white">
-        <div class="modal-header border-secondary">
-          <h5 class="modal-title">수기 캐릭터 추가</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label small text-muted">캐릭터명 (로스트아크 정확한 캐릭터명)</label>
-            <input type="text" class="form-control bg-secondary text-white border-0" id="newCharName" placeholder="캐릭터명 입력">
-          </div>
-          <div class="mb-3">
-            <label class="form-label small text-muted">소유자 (원정대 그룹명)</label>
-            <input type="text" class="form-control bg-secondary text-white border-0" id="newCharOwner" placeholder="원정대 이름">
-          </div>
-          <div class="text-warning small">ℹ️ 캐릭터 추가 후, 깃허브 [Actions] 탭에서 [Run workflow]를 실행하면 API 정보가 채워집니다[cite: 1].</div>
-        </div>
-        <div class="modal-footer border-secondary">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-warning btn-sm" onclick="addNewCharacter()">추가하기</button>
-        </div>
+  <!-- 수동 제어 블러 모달 창 -->
+  <div class="custom-modal-backdrop" id="addCharModal">
+    <div class="custom-modal-box text-white">
+      <div class="d-flex justify-content: space-between align-items-center mb-3">
+        <h5 class="modal-title m-0 fw-bold">수기 캐릭터 추가</h5>
+        <button type="button" class="btn-close btn-close-white" onclick="closeAddCharacterModal()"></button>
+      </div>
+      <div class="mb-3">
+        <label class="form-label small text-muted">캐릭터명 (로스트아크 정확한 캐릭터명)</label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="newCharName" placeholder="캐릭터명 입력">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small text-muted">소유자 (원정대 그룹명)</label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="newCharOwner" placeholder="원정대 이름">
+      </div>
+      <div class="text-warning small mb-4">ℹ️ 캐릭터 추가 후, 깃허브 [Actions] 탭에서 [Run workflow]를 실행하면 API 정보가 채워집니다.</div>
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary btn-sm px-3" onclick="closeAddCharacterModal()">취소</button>
+        <button type="button" class="btn btn-warning btn-sm px-3 fw-bold" onclick="addNewCharacter()">추가하기</button>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap 5 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     let masterRaids = [];
     let characterList = [];
     let currentOwnerFilter = 'ALL';
     let currentMainView = 'CHARS';
-    let addModal;
 
     window.onload = function() {
-      addModal = new bootstrap.Modal(document.getElementById('addCharModal'));
       loadDataFromGitHub();
     };
 
@@ -180,7 +181,13 @@
     }
 
     function openAddCharacterModal() {
-      if (addModal) addModal.show();
+      document.getElementById('newCharName').value = '';
+      document.getElementById('newCharOwner').value = '';
+      document.getElementById('addCharModal').classList.add('show');
+    }
+
+    function closeAddCharacterModal() {
+      document.getElementById('addCharModal').classList.remove('show');
     }
 
     function addNewCharacter() {
@@ -204,7 +211,7 @@
 
       renderOwnerTabs();
       renderDashboard();
-      if (addModal) addModal.hide();
+      closeAddCharacterModal();
 
       alert(`'${name}' 캐릭터가 추가되었습니다!\n\n⚠️ 주의: GitHub Pages 환경 특성상 웹 화면에서 곧바로 파일이 저장되지는 않습니다.\n1. GitHub 웹사이트의 data.json 파일에 이 캐릭터를 직접 추가하시거나,\n2. 깃허브 Actions의 [Run workflow]를 실행해 주세요.`);
     }
