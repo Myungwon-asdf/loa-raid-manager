@@ -72,7 +72,7 @@ async function main() {
     return;
   }
 
-  console.log(`총 ${db.characterList.length명의 캐릭터 API 동기화 시작...`);
+  console.log(`총 ${db.characterList.length}명의 캐릭터 API 동기화 시작...`);
 
   for (let char of db.characterList) {
     console.log(`갱신 중: ${char.name}`);
