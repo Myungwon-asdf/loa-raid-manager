@@ -1,7 +1,17 @@
 {
   "masterRaids": [
-    { "id": "r1", "group": "카제로스 1막", "name": "카제로스 1막 [하드]", "reqLevel": 1680 },
-    { "id": "r2", "group": "에키드나", "name": "에키드나 [하드]", "reqLevel": 1630 }
+    {
+      "id": "r1",
+      "group": "카제로스 1막",
+      "name": "카제로스 1막 [하드]",
+      "reqLevel": 1680
+    },
+    {
+      "id": "r2",
+      "group": "에키드나",
+      "name": "에키드나 [하드]",
+      "reqLevel": 1630
+    }
   ],
   "characterList": [
     {
@@ -9,7 +19,7 @@
       "owner": "아리",
       "name": "예시캐릭터",
       "className": "슬레이어",
-      "itemLevel": 1680.00,
+      "itemLevel": 1680,
       "combatPower": "250000",
       "title": "빛의 소리",
       "gemSummary": "9레벨 6개",
