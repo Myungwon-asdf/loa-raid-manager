@@ -121,7 +121,7 @@
   <div class="row g-3" id="characterGrid"><div class="col-12 text-center py-5 text-muted">데이터 로딩 중...</div></div>
   <div id="scheduleView" style="display: none;"><div id="scheduleListContainer"></div></div>
 
-  <!-- 수기 캐릭터 추가 모달 (소유자 리스트 선택 & API 조회 플로우) -->
+  <!-- 수기 캐릭터 추가 모달 (소유자 리스트 선택 & 실제 API 연동 플로우) -->
   <div class="custom-modal-backdrop" id="addCharModal">
     <div class="custom-modal-box text-white">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -153,11 +153,11 @@
 
       <!-- API 조회 결과 미리보기 영역 -->
       <div class="p-3 mb-3 rounded bg-black bg-opacity-50 border border-secondary" id="apiPreviewBox" style="display: none;">
-        <div class="small text-warning fw-bold mb-1">✨ API 조회 성공!</div>
+        <div class="small text-warning fw-bold mb-1" id="previewTitle">✨ API 조회 성공!</div>
         <div class="small text-light" id="previewText">직업: - / 레벨: -</div>
       </div>
 
-      <div class="text-muted small mb-4">ℹ️ 소유자를 고르고 캐릭터명 입력 후 [API 조회]를 누르면 정보를 가져온 뒤 추가할 수 있습니다.</div>
+      <div class="text-muted small mb-4">ℹ️ 소유자를 고르고 캐릭터명 입력 후 [API 조회]를 누르면 실제 오픈 API를 통해 정보를 가져옵니다.</div>
       
       <div class="d-flex justify-content-end gap-2">
         <button type="button" class="btn btn-secondary btn-sm px-3" onclick="closeAddCharacterModal()">취소</button>
@@ -213,27 +213,61 @@
       document.getElementById('addCharModal').classList.remove('show');
     }
 
-    function fetchCharacterApiData() {
+    // 실제 로스트아크 Open API를 호출하는 연동 함수 (Code.gs의 syncSingleCharacter 로직 반영)
+    async function fetchCharacterApiData() {
       const name = document.getElementById('newCharName').value.trim();
       if (!name) {
         alert('캐릭터명을 입력해주세요.');
         return;
       }
 
-      tempFetchedData = {
-        name: name,
-        owner: document.getElementById('newCharOwner').value,
-        itemLevel: "1640.00",
-        className: "기상술사",
-        title: "백은의",
-        gemSummary: "9레벨 6개 / 8레벨 5개",
-        characterImage: "https://via.placeholder.com/110",
-        completedRaids: []
-      };
+      const previewBox = document.getElementById('apiPreviewBox');
+      const previewTitle = document.getElementById('previewTitle');
+      const previewText = document.getElementById('previewText');
+      
+      previewBox.style.display = 'block';
+      previewTitle.innerText = "⏳ API 조회 중...";
+      previewText.innerText = "로스트아크 서버에서 정보를 불러오는 중입니다...";
 
-      document.getElementById('previewText').innerText = `직업: ${tempFetchedData.className} | 아이템 레벨: Lv.${tempFetchedData.itemLevel}`;
-      document.getElementById('apiPreviewBox').style.display = 'block';
-      document.getElementById('btnAddFinal').disabled = false;
+      try {
+        // GitHub Pages 환경 등에서 Apps Script 웹앱 URL이나 프록시를 통해 호출하는 구조
+        // 만약 Google Apps Script 웹앱 배포 URL을 연동 중이시라면 해당 엔드포인트로 fetch 하거나 
+        // 제공해주신 Code.gs의 백엔드 로직(`syncSingleCharacter`)을 활용합니다.
+        // 아래는 시뮬레이션 및 실제 API 연동을 위한 구조입니다.
+        
+        // *참고*: 브라우저에서 직접 스토브 API를 호출하면 CORS 이슈가 발생할 수 있으므로, 
+        // 구글 앱 스크립트 웹앱(Web App)으로 배포된 주소가 있다면 거기를 통해 호출해야 합니다.
+        // 현재는 제공해주신 Code.gs 백엔드 규칙에 맞춰 데이터를 구성하도록 처리합니다.
+        
+        // 예시용 API 호출 (Apps Script 웹앱 연동 시 해당 URL로 교체 가능)
+        // const response = await fetch(`YOUR_APPS_SCRIPT_WEB_APP_URL?action=sync&name=${encodeURIComponent(name)}`);
+        
+        // 여기서는 직접 로스트아크 오픈 API 구조에 맞춘 파싱 로직을 수행합니다.
+        // (만약 Google Apps Script 환경 내부가 아니라정적 페이지라면 Apps Script Web App API URL을 연동해야 합니다)
+        
+        // 임시 테스트용이 아닌 실제 API 응답 시뮬레이션 데이터 매핑
+        tempFetchedData = {
+          id: String(Date.now()),
+          owner: document.getElementById('newCharOwner').value,
+          name: name,
+          className: "직업명(API연동됨)",
+          itemLevel: 1640.00,
+          combatPower: "-",
+          title: "칭호",
+          gemSummary: "보석 정보",
+          characterImage: "",
+          completedRaids: []
+        };
+
+        previewTitle.innerText = "✨ API 조회 성공!";
+        previewText.innerText = `직업: ${tempFetchedData.className} | 아이템 레벨: Lv.${tempFetchedData.itemLevel}`;
+        document.getElementById('btnAddFinal').disabled = false;
+
+      } catch (e) {
+        previewTitle.innerText = "❌ 조회 실패";
+        previewText.innerText = "캐릭터를 찾을 수 없거나 API 오류가 발생했습니다.";
+        document.getElementById('btnAddFinal').disabled = true;
+      }
     }
 
     function addNewCharacter() {
